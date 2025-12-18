@@ -1,1 +1,1 @@
-# EKS-helm-argocd-imageupdater
+#
