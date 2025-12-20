@@ -9,7 +9,8 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: ' https://github.com/SaiF-654/EKS-helm-argocd-imageupdater.git'
+                git branch: 'main',
+                    url: 'https://github.com/SaiF-654/EKS-helm-argocd-imageupdater.git'
             }
         }
 
@@ -21,10 +22,17 @@ pipeline {
 
         stage('Push Image to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-cred',
+                        usernameVariable: 'USER',
+                        passwordVariable: 'PASS'
+                    )
+                ]) {
                     sh 'echo $PASS | docker login -u $USER --password-stdin'
                     sh 'docker push $DOCKER_IMAGE:${BUILD_NUMBER}'
                 }
             }
         }
-
+    }
+}
