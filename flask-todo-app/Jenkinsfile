@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Repo') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/SaiF-654/EKS-helm-argocd-imageupdater.git',
+                    credentialsId: 'GitHubCred'
+            }
+        }
+
+        stage('Update Image Tag in Helm values') {
+            steps {
+                sh '''
+                  sed -i "s/tag:.*/tag: ${BUILD_NUMBER}/" flask-app/values.yaml
+                '''
+            }
+        }
+
+        stage('Commit & Push Changes') {
+            steps {
+                sh '''
+                  git config user.email "jenkins@ci.local"
+                  git config user.name "Jenkins CI"
+                  git add flask-app/values.yaml
+                  git commit -m "Update image tag to ${BUILD_NUMBER}" || echo "No changes"
+                  git push origin main
+                '''
+            }
+        }
+    }
+}
+
