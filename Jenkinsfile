@@ -1,53 +1,57 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKER_IMAGE = "saifrehman123/flask-todo"
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-cred')
+        DOCKER_IMAGE = 'yourusername/flask-todo'
+        DOCKER_TAG = '4'
     }
-
+    
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
-                sh """
-                docker build \
-                -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
-                flask-todo-app
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKERHUB_CREDENTIALS',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        docker buildx build -t $DOCKER_USER/flask-todo:$DOCKER_TAG --load flask-todo-app
+                    '''
+                }
             }
         }
-
+        
         stage('Login to Docker Hub') {
             steps {
-                sh """
-                echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login \
-                -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKERHUB_CREDENTIALS',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
             }
         }
-
+        
         stage('Push Docker Image') {
             steps {
-                sh """
-                docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
-                docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest
-                docker push ${DOCKER_IMAGE}:latest
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKERHUB_CREDENTIALS',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        docker push $DOCKER_USER/flask-todo:$DOCKER_TAG
+                        docker logout
+                    '''
+                }
             }
-        }
-    }
-
-    post {
-        always {
-            sh 'docker logout'
         }
     }
 }
-
